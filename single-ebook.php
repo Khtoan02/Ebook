@@ -22,13 +22,13 @@ $breadcrumb_items = [
 
 foreach ( $ancestors as $ancestor_id ) {
     $breadcrumb_items[] = [
-        'label' => get_the_title( $ancestor_id ),
+        'label' => ebook_get_plain_title( $ancestor_id ),
         'url'   => get_permalink( $ancestor_id ),
     ];
 }
 
 $breadcrumb_items[] = [
-    'label' => get_the_title(),
+    'label' => ebook_get_plain_title( get_the_ID() ),
     'url'   => '',
 ];
 
@@ -40,7 +40,7 @@ $next_id = ebook_get_adjacent_page_id( get_the_ID(), 'next' );
 <head>
     <meta charset="<?php bloginfo( 'charset' ); ?>" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title><?php echo esc_html( get_the_title( $root_post ) ); ?> - <?php echo esc_html( get_the_title() ); ?></title>
+    <title><?php echo esc_html( ebook_get_plain_title( $root_post ) ); ?> - <?php echo esc_html( ebook_get_plain_title( get_the_ID() ) ); ?></title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <?php wp_head(); ?>
     <style>
@@ -143,7 +143,7 @@ $next_id = ebook_get_adjacent_page_id( get_the_ID(), 'next' );
     <!-- HEADER MOBILE -->
     <header class="md:hidden flex items-center justify-between p-4 border-b border-gray-200 bg-white z-40 sticky top-0">
         <div class="font-bold text-lg text-slate-800 truncate max-w-[200px]">
-            <?php echo esc_html( get_the_title( $root_post ) ); ?>
+                    <?php echo esc_html( ebook_get_plain_title( $root_post ) ); ?>
         </div>
         <button id="mobile-menu-btn" class="text-slate-500 focus:outline-none p-2 rounded-md hover:bg-gray-50 transition-colors">
             <i class="fas fa-bars text-xl"></i>
@@ -158,7 +158,7 @@ $next_id = ebook_get_adjacent_page_id( get_the_ID(), 'next' );
                     <div class="w-9 h-9 bg-white border border-gray-200 rounded-lg flex items-center justify-center text-sky-600 shadow-sm group-hover:border-sky-200 group-hover:shadow-md transition-all">
                         <i class="fas fa-book-open"></i>
                     </div>
-                    <span class="font-bold text-sm uppercase tracking-wide leading-tight line-clamp-2"><?php echo esc_html( get_the_title( $root_post ) ); ?></span>
+                    <span class="font-bold text-sm uppercase tracking-wide leading-tight line-clamp-2"><?php echo esc_html( ebook_get_plain_title( $root_post ) ); ?></span>
                 </a>
             </div>
 
@@ -236,7 +236,7 @@ $next_id = ebook_get_adjacent_page_id( get_the_ID(), 'next' );
                             <?php if ( $prev_id ) : ?>
                                 <span class="block text-xs text-slate-400 uppercase tracking-wide mb-1"><?php esc_html_e( 'Trang trước', 'ebook-gitbook' ); ?></span>
                                 <a class="block text-sky-700 hover:text-sky-900 font-medium" href="<?php echo esc_url( get_permalink( $prev_id ) ); ?>">
-                                    &laquo; <?php echo esc_html( get_the_title( $prev_id ) ); ?>
+                                    &laquo; <?php echo esc_html( ebook_get_plain_title( $prev_id ) ); ?>
                                 </a>
                             <?php endif; ?>
                         </div>
@@ -244,7 +244,7 @@ $next_id = ebook_get_adjacent_page_id( get_the_ID(), 'next' );
                             <?php if ( $next_id ) : ?>
                                 <span class="block text-xs text-slate-400 uppercase tracking-wide mb-1"><?php esc_html_e( 'Trang tiếp theo', 'ebook-gitbook' ); ?></span>
                                 <a class="block text-sky-700 hover:text-sky-900 font-medium" href="<?php echo esc_url( get_permalink( $next_id ) ); ?>">
-                                    <?php echo esc_html( get_the_title( $next_id ) ); ?> &raquo;
+                                    <?php echo esc_html( ebook_get_plain_title( $next_id ) ); ?> &raquo;
                                 </a>
                             <?php endif; ?>
                         </div>

@@ -191,25 +191,6 @@ function ebook_builder_render_page() {
                         ?>
                     </p>
 
-                    <div class="builder-grid">
-                        <p class="builder-field">
-                            <label for="ebook-builder-meta-status"><?php esc_html_e( 'Trạng thái hiển thị', 'ebook-gitbook' ); ?></label>
-                            <select id="ebook-builder-meta-status" class="widefat" disabled>
-                                <option value="draft"><?php esc_html_e( 'Draft', 'ebook-gitbook' ); ?></option>
-                                <option value="beta"><?php esc_html_e( 'Beta', 'ebook-gitbook' ); ?></option>
-                                <option value="published"><?php esc_html_e( 'Published', 'ebook-gitbook' ); ?></option>
-                            </select>
-                        </p>
-                        <p class="builder-field">
-                            <label for="ebook-builder-meta-version"><?php esc_html_e( 'Phiên bản', 'ebook-gitbook' ); ?></label>
-                            <input type="text" id="ebook-builder-meta-version" class="widefat" disabled>
-                        </p>
-                        <p class="builder-field">
-                            <label for="ebook-builder-meta-download"><?php esc_html_e( 'Link tải', 'ebook-gitbook' ); ?></label>
-                            <input type="url" id="ebook-builder-meta-download" class="widefat" placeholder="https://" disabled>
-                        </p>
-                    </div>
-
                     <div class="builder-actions">
                         <button type="submit" class="button button-primary"><?php esc_html_e( 'Lưu thay đổi', 'ebook-gitbook' ); ?></button>
                         <button type="button" class="button" id="ebook-builder-refresh"><?php esc_html_e( 'Huỷ thay đổi', 'ebook-gitbook' ); ?></button>
@@ -231,13 +212,16 @@ function ebook_builder_get_root_posts() {
         'post_status'    => [ 'draft', 'publish', 'pending', 'future', 'private' ],
     ] );
 
-    return array_map( function ( WP_Post $post ) {
-        return [
-            'id'     => $post->ID,
-            'title'  => get_the_title( $post ),
-            'status' => $post->post_status,
-        ];
-    }, $roots );
+    return array_map(
+        function ( WP_Post $post ) {
+            return [
+                'id'     => $post->ID,
+                'title'  => ebook_get_plain_title( $post ),
+                'status' => $post->post_status,
+            ];
+        },
+        $roots
+    );
 }
 
 function ebook_builder_check_permissions() {
@@ -291,8 +275,9 @@ function ebook_builder_format_tree( WP_Post $post ) {
 
     return [
         'id'       => $post->ID,
-        'title'    => get_the_title( $post ),
+        'title'    => ebook_get_plain_title( $post ),
         'status'   => $post->post_status,
+        'is_root'  => 0 === (int) $post->post_parent,
         'children' => array_map( 'ebook_builder_format_tree', $children ),
     ];
 }
@@ -310,19 +295,14 @@ function ebook_builder_ajax_get_node() {
 
     wp_send_json_success( [
         'post' => [
-            'ID'       => $post->ID,
-            'title'    => get_the_title( $post ),
-            'status'   => $post->post_status,
-            'excerpt'  => $post->post_excerpt,
-            'content'  => $post->post_content,
-            'parent'   => (int) $post->post_parent,
-            'link'     => get_permalink( $post ),
-            'is_root'  => 0 === (int) $post->post_parent,
-        ],
-        'meta' => [
-            '_ebook_status'   => get_post_meta( $post->ID, '_ebook_status', true ),
-            '_ebook_version'  => get_post_meta( $post->ID, '_ebook_version', true ),
-            '_ebook_download' => get_post_meta( $post->ID, '_ebook_download', true ),
+            'ID'      => $post->ID,
+            'title'   => ebook_get_plain_title( $post ),
+            'status'  => $post->post_status,
+            'excerpt' => $post->post_excerpt,
+            'content' => $post->post_content,
+            'parent'  => (int) $post->post_parent,
+            'link'    => get_permalink( $post ),
+            'is_root' => 0 === (int) $post->post_parent,
         ],
     ] );
 }
@@ -358,20 +338,6 @@ function ebook_builder_ajax_save_node() {
     ];
 
     wp_update_post( $update );
-
-    if ( $is_root ) {
-        $meta_status   = isset( $_POST['_ebook_status'] ) ? sanitize_text_field( wp_unslash( $_POST['_ebook_status'] ) ) : '';
-        $meta_version  = isset( $_POST['_ebook_version'] ) ? sanitize_text_field( wp_unslash( $_POST['_ebook_version'] ) ) : '';
-        $meta_download = isset( $_POST['_ebook_download'] ) ? esc_url_raw( wp_unslash( $_POST['_ebook_download'] ) ) : '';
-
-        if ( $meta_status ) {
-            update_post_meta( $post_id, '_ebook_status', $meta_status );
-        }
-        if ( $meta_version ) {
-            update_post_meta( $post_id, '_ebook_version', $meta_version );
-        }
-        update_post_meta( $post_id, '_ebook_download', $meta_download );
-    }
 
     wp_send_json_success( [ 'message' => __( 'Đã lưu trang.', 'ebook-gitbook' ) ] );
 }

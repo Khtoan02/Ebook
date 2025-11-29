@@ -21,9 +21,6 @@
         status: $('#ebook-builder-status'),
         parent: $('#ebook-builder-parent'),
         excerpt: $('#ebook-builder-excerpt'),
-        metaStatus: $('#ebook-builder-meta-status'),
-        metaVersion: $('#ebook-builder-meta-version'),
-        metaDownload: $('#ebook-builder-meta-download'),
         rootInput: $('#ebook-builder-root-id'),
         postInput: $('#ebook-builder-post-id'),
         notices: $('#ebook-builder-notices'),
@@ -252,7 +249,17 @@
 
         const label = node.title || '(Chưa có tiêu đề)';
         const $title = $('<span class="ebook-builder-node__title"></span>').text(label);
-        const $badge = $('<span class="ebook-builder-node__badge"></span>').text(node.status);
+
+        const wpStatusLabels = {
+            draft: 'Nháp',
+            publish: 'Xuất bản',
+            pending: 'Chờ duyệt',
+            future: 'Hẹn giờ',
+            private: 'Riêng tư',
+        };
+
+        const wpStatusLabel = wpStatusLabels[node.status] || node.status || '';
+        const $badge = $('<span class="ebook-builder-node__badge"></span>').text(wpStatusLabel);
         $item.append($title, $badge);
         $li.append($item);
 
@@ -333,7 +340,7 @@
     }
 
     function fillForm(response) {
-        const { post, meta } = response;
+        const { post } = response;
         selectors.postInput.val(post.ID);
         selectors.title.val(post.title);
         selectors.status.val(post.status);
@@ -348,18 +355,6 @@
         const parentValue = post.is_root ? state.rootId : (post.parent || state.rootId);
         selectors.parent.val(parentValue).prop('disabled', post.is_root);
 
-        toggleMetaFields(post.is_root);
-
-        selectors.metaStatus.val(meta._ebook_status || 'draft').prop('disabled', !post.is_root);
-        selectors.metaVersion.val(meta._ebook_version || '1.0').prop('disabled', !post.is_root);
-        selectors.metaDownload.val(meta._ebook_download || '').prop('disabled', !post.is_root);
-    }
-
-    function toggleMetaFields(isRoot) {
-        const disabled = !isRoot;
-        selectors.metaStatus.prop('disabled', disabled);
-        selectors.metaVersion.prop('disabled', disabled);
-        selectors.metaDownload.prop('disabled', disabled);
     }
 
     function updateParentOptions() {
@@ -517,9 +512,6 @@
             post_parent: parentDisabled ? 0 : selectors.parent.val(),
             post_excerpt: selectors.excerpt.val(),
             post_content: getEditorContent(),
-            _ebook_status: selectors.metaStatus.val(),
-            _ebook_version: selectors.metaVersion.val(),
-            _ebook_download: selectors.metaDownload.val(),
         };
     }
 

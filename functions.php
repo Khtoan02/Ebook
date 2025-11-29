@@ -300,13 +300,17 @@ function ebook_render_navigation_tree( $tree, $current_id ) {
             $classes[] = 'is-active';
         }
         echo '<li class="' . esc_attr( implode( ' ', $classes ) ) . '">';
-        echo '<a href="' . esc_url( get_permalink( $post ) ) . '">' . esc_html( get_the_title( $post ) ) . '</a>';
+        echo '<a href="' . esc_url( get_permalink( $post ) ) . '">' . esc_html( ebook_get_plain_title( $post ) ) . '</a>';
         if ( ! empty( $node['children'] ) ) {
             ebook_render_navigation_tree( $node['children'], $current_id );
         }
         echo '</li>';
     }
     echo '</ul>';
+}
+
+function ebook_get_plain_title( $post ) {
+    return wp_specialchars_decode( get_the_title( $post ), ENT_QUOTES );
 }
 
 // --------------------------------------------------
