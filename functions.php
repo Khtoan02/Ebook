@@ -15,6 +15,38 @@ add_action( 'after_setup_theme', function () {
 } );
 
 // --------------------------------------------------
+// Register Ebook Custom Post Type
+// --------------------------------------------------
+add_action( 'init', function () {
+    // Kiểm tra xem post type đã được đăng ký chưa (có thể từ plugin)
+    if ( ! post_type_exists( 'ebook' ) ) {
+        register_post_type( 'ebook', [
+            'labels'              => [
+                'name'               => __( 'Ebooks', 'ebook-gitbook' ),
+                'singular_name'      => __( 'Ebook', 'ebook-gitbook' ),
+                'add_new'            => __( 'Thêm mới', 'ebook-gitbook' ),
+                'add_new_item'       => __( 'Thêm Ebook mới', 'ebook-gitbook' ),
+                'edit_item'          => __( 'Chỉnh sửa Ebook', 'ebook-gitbook' ),
+                'new_item'           => __( 'Ebook mới', 'ebook-gitbook' ),
+                'view_item'          => __( 'Xem Ebook', 'ebook-gitbook' ),
+                'search_items'       => __( 'Tìm kiếm Ebook', 'ebook-gitbook' ),
+                'not_found'          => __( 'Không tìm thấy Ebook', 'ebook-gitbook' ),
+                'not_found_in_trash' => __( 'Không có Ebook trong thùng rác', 'ebook-gitbook' ),
+            ],
+            'public'              => true,
+            'has_archive'         => true,
+            'hierarchical'        => true,
+            'supports'            => [ 'title', 'editor', 'thumbnail', 'page-attributes' ],
+            'menu_icon'           => 'dashicons-book-alt',
+            'rewrite'             => [ 'slug' => 'ebook' ],
+            'show_in_rest'         => false,
+            'show_ui'              => false, // Ẩn menu mặc định, chỉ dùng menu tùy chỉnh
+            'show_in_menu'         => false, // Ẩn khỏi menu admin
+        ] );
+    }
+} );
+
+// --------------------------------------------------
 // Assets
 // --------------------------------------------------
 add_action( 'wp_enqueue_scripts', function () {
@@ -36,155 +68,6 @@ add_action( 'wp_enqueue_scripts', function () {
     wp_localize_script( 'ebook-theme', 'ebookTheme', [
         'tocHeadingSelector' => 'main#ebook-main article',
     ] );
-} );
-
-// --------------------------------------------------
-// Custom Post Type & Taxonomy
-// --------------------------------------------------
-add_action( 'init', function () {
-    register_post_type( 'ebook', [
-        'label'         => __( 'Ebooks', 'ebook-gitbook' ),
-        'labels'        => [
-            'name'          => __( 'Ebooks', 'ebook-gitbook' ),
-            'singular_name' => __( 'Ebook', 'ebook-gitbook' ),
-        ],
-        'public'        => true,
-        'hierarchical'  => true,
-        'has_archive'   => true,
-        'rewrite'       => [ 'slug' => 'ebooks' ],
-        'menu_position' => 5,
-        'menu_icon'     => 'dashicons-book-alt',
-        'supports'      => [ 'title', 'editor', 'excerpt', 'thumbnail', 'page-attributes', 'custom-fields' ],
-        'show_in_rest'  => true,
-    ] );
-
-    register_taxonomy( 'ebook-series', 'ebook', [
-        'label'        => __( 'Series', 'ebook-gitbook' ),
-        'hierarchical' => true,
-        'rewrite'      => [ 'slug' => 'ebook-series' ],
-        'show_in_rest' => true,
-    ] );
-} );
-
-// --------------------------------------------------
-// Meta boxes for status, version, files
-// --------------------------------------------------
-function ebook_register_meta_fields() {
-    $fields = [
-        'status'   => [ 'default' => 'draft' ],
-        'version'  => [ 'default' => '1.0' ],
-        'download' => [ 'default' => '' ],
-    ];
-
-    foreach ( $fields as $key => $args ) {
-        register_post_meta( 'ebook', "_ebook_{$key}", [
-            'show_in_rest' => true,
-            'single'       => true,
-            'type'         => 'string',
-            'default'      => $args['default'],
-            'auth_callback'=> function () {
-                return current_user_can( 'edit_posts' );
-            },
-        ] );
-    }
-}
-add_action( 'init', 'ebook_register_meta_fields' );
-
-function ebook_add_meta_box() {
-    add_meta_box( 'ebook_meta', __( 'Ebook Details', 'ebook-gitbook' ), 'ebook_render_meta_box', 'ebook', 'side', 'default' );
-}
-add_action( 'add_meta_boxes', 'ebook_add_meta_box' );
-
-function ebook_render_meta_box( $post ) {
-    wp_nonce_field( 'ebook_meta_save', 'ebook_meta_nonce' );
-    $status   = get_post_meta( $post->ID, '_ebook_status', true ) ?: 'draft';
-    $version  = get_post_meta( $post->ID, '_ebook_version', true ) ?: '1.0';
-    $download = get_post_meta( $post->ID, '_ebook_download', true );
-    ?>
-    <p>
-        <label for="ebook_status"><?php _e( 'Trạng thái', 'ebook-gitbook' ); ?></label>
-        <select name="ebook_status" id="ebook_status" class="widefat">
-            <?php foreach ( [ 'draft' => 'Draft', 'beta' => 'Beta', 'published' => 'Published' ] as $value => $label ) : ?>
-                <option value="<?php echo esc_attr( $value ); ?>" <?php selected( $status, $value ); ?>><?php echo esc_html( $label ); ?></option>
-            <?php endforeach; ?>
-        </select>
-    </p>
-    <p>
-        <label for="ebook_version"><?php _e( 'Version', 'ebook-gitbook' ); ?></label>
-        <input type="text" name="ebook_version" id="ebook_version" class="widefat" value="<?php echo esc_attr( $version ); ?>" />
-    </p>
-    <p>
-        <label for="ebook_download"><?php _e( 'Link tải PDF/ePub', 'ebook-gitbook' ); ?></label>
-        <input type="url" name="ebook_download" id="ebook_download" class="widefat" value="<?php echo esc_url( $download ); ?>" placeholder="https://" />
-    </p>
-    <?php
-}
-
-function ebook_save_meta( $post_id ) {
-    if ( ! isset( $_POST['ebook_meta_nonce'] ) || ! wp_verify_nonce( $_POST['ebook_meta_nonce'], 'ebook_meta_save' ) ) {
-        return;
-    }
-
-    if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
-        return;
-    }
-
-    if ( ! current_user_can( 'edit_post', $post_id ) ) {
-        return;
-    }
-
-    $fields = [ 'status', 'version', 'download' ];
-
-    foreach ( $fields as $field ) {
-        if ( isset( $_POST[ "ebook_{$field}" ] ) ) {
-            update_post_meta( $post_id, "_ebook_{$field}", sanitize_text_field( wp_unslash( $_POST[ "ebook_{$field}" ] ) ) );
-        }
-    }
-}
-add_action( 'save_post_ebook', 'ebook_save_meta' );
-
-// --------------------------------------------------
-// Admin drag & drop ordering via SortableJS
-// --------------------------------------------------
-add_filter( 'manage_ebook_posts_columns', function ( $columns ) {
-    $columns['menu_order'] = __( 'Thứ tự', 'ebook-gitbook' );
-    return $columns;
-} );
-
-add_action( 'manage_ebook_posts_custom_column', function ( $column, $post_id ) {
-    if ( 'menu_order' === $column ) {
-        echo (int) get_post_field( 'menu_order', $post_id );
-        echo '<span class="dashicons dashicons-move"></span>';
-    }
-}, 10, 2 );
-
-add_action( 'admin_enqueue_scripts', function ( $hook ) {
-    global $typenow;
-    if ( 'edit.php' === $hook && 'ebook' === $typenow ) {
-        wp_enqueue_script( 'sortablejs', 'https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js', [], null, true );
-        wp_enqueue_script( 'ebook-admin-sort', get_template_directory_uri() . '/assets/js/admin-sortable.js', [ 'sortablejs', 'jquery' ], wp_get_theme()->get( 'Version' ), true );
-        wp_localize_script( 'ebook-admin-sort', 'ebookSort', [
-            'nonce'   => wp_create_nonce( 'ebook_sort_nonce' ),
-            'ajaxurl' => admin_url( 'admin-ajax.php' ),
-        ] );
-    }
-} );
-
-add_action( 'wp_ajax_ebook_reorder', function () {
-    check_ajax_referer( 'ebook_sort_nonce', 'nonce' );
-
-    if ( empty( $_POST['order'] ) || ! is_array( $_POST['order'] ) ) {
-        wp_send_json_error( [ 'message' => 'Invalid payload' ], 400 );
-    }
-
-    foreach ( $_POST['order'] as $index => $post_id ) {
-        wp_update_post( [
-            'ID'         => (int) $post_id,
-            'menu_order' => $index,
-        ] );
-    }
-
-    wp_send_json_success();
 } );
 
 // --------------------------------------------------
@@ -327,4 +210,316 @@ add_action( 'pre_get_posts', function ( $query ) {
     }
 } );
 
-require_once get_template_directory() . '/admin-ebook-builder.php';
+// --------------------------------------------------
+// Admin: Ebook Manager
+// --------------------------------------------------
+add_action( 'admin_menu', function () {
+    add_menu_page(
+        __( 'Quản lý Ebook', 'ebook-gitbook' ),
+        __( 'Quản lý Ebook', 'ebook-gitbook' ),
+        'manage_options',
+        'ebook-manager',
+        'ebook_admin_manager_page',
+        'dashicons-book-alt',
+        30
+    );
+    
+    // Thêm submenu cho trang soạn thảo ebook
+    add_submenu_page(
+        'ebook-manager',
+        __( 'Soạn thảo Ebook', 'ebook-gitbook' ),
+        __( 'Soạn thảo Ebook', 'ebook-gitbook' ),
+        'manage_options',
+        'ebook-editor',
+        'ebook_admin_editor_page'
+    );
+} );
+
+add_action( 'admin_enqueue_scripts', function ( $hook ) {
+    if ( 'toplevel_page_ebook-manager' !== $hook ) {
+        return;
+    }
+    // Font Awesome cho icon
+    wp_enqueue_style( 'ebook-fontawesome', 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css', [], '6.4.0' );
+    // CSS tùy chỉnh
+    wp_enqueue_style( 'ebook-admin-manager', get_template_directory_uri() . '/assets/css/admin-ebook-manager.css', [ 'ebook-fontawesome' ], wp_get_theme()->get( 'Version' ) );
+} );
+
+// Enqueue scripts cho trang soạn thảo ebook
+add_action( 'admin_enqueue_scripts', function ( $hook ) {
+    // Kiểm tra hook cho trang editor
+    // Hook có thể là: ebook-manager_page_ebook-editor (submenu) hoặc tương tự
+    if ( $hook !== 'ebook-manager_page_ebook-editor' && strpos( $hook, 'ebook-editor' ) === false ) {
+        return;
+    }
+    // WordPress Media Library
+    wp_enqueue_media();
+} );
+
+// Xử lý xóa Ebook
+add_action( 'admin_post_ebook_delete', function () {
+    if ( ! current_user_can( 'manage_options' ) ) {
+        wp_die( __( 'Bạn không có quyền thực hiện hành động này.', 'ebook-gitbook' ) );
+    }
+
+    check_admin_referer( 'ebook_delete_' . $_GET['ebook_id'] );
+
+    $ebook_id = (int) $_GET['ebook_id'];
+    if ( $ebook_id > 0 ) {
+        // Xóa ebook và tất cả trang con
+        $children = get_posts( [
+            'post_type'      => 'ebook',
+            'post_parent'    => $ebook_id,
+            'posts_per_page' => -1,
+            'fields'         => 'ids',
+        ] );
+
+        foreach ( $children as $child_id ) {
+            wp_delete_post( $child_id, true );
+        }
+
+        wp_delete_post( $ebook_id, true );
+    }
+
+    wp_redirect( admin_url( 'admin.php?page=ebook-manager&deleted=1' ) );
+    exit;
+} );
+
+function ebook_admin_manager_page() {
+    require_once get_template_directory() . '/admin-ebook-manager.php';
+}
+
+// Helper function để format thời gian cho admin
+function ebook_format_time( $seconds ) {
+    if ( $seconds < 60 ) {
+        return $seconds . 's';
+    } elseif ( $seconds < 3600 ) {
+        return floor( $seconds / 60 ) . 'm';
+    } else {
+        return floor( $seconds / 3600 ) . 'h ' . floor( ( $seconds % 3600 ) / 60 ) . 'm';
+    }
+}
+
+// --------------------------------------------------
+// Admin: Ebook Editor
+// --------------------------------------------------
+function ebook_admin_editor_page() {
+    require_once get_template_directory() . '/admin-ebook-editor.php';
+}
+
+// API endpoint để lưu ebook
+add_action( 'wp_ajax_ebook_save', function () {
+    // Kiểm tra quyền
+    if ( ! current_user_can( 'manage_options' ) ) {
+        wp_send_json_error( [ 'message' => 'Bạn không có quyền thực hiện hành động này.' ] );
+    }
+
+    // Kiểm tra nonce
+    $ebook_id = isset( $_POST['ebook_id'] ) ? (int) $_POST['ebook_id'] : 0;
+    $nonce = isset( $_POST['nonce'] ) ? sanitize_text_field( $_POST['nonce'] ) : '';
+    
+    // Nonce được tạo với ebook_id = 0 khi tạo mới, hoặc ebook_id thực khi chỉnh sửa
+    $nonce_action = 'ebook_editor_save_' . $ebook_id;
+    if ( ! wp_verify_nonce( $nonce, $nonce_action ) ) {
+        wp_send_json_error( [ 'message' => 'Nonce không hợp lệ. Vui lòng tải lại trang.' ] );
+    }
+
+    // Lấy dữ liệu
+    $title = isset( $_POST['title'] ) ? sanitize_text_field( $_POST['title'] ) : '';
+    $content = isset( $_POST['content'] ) ? wp_kses_post( $_POST['content'] ) : '';
+    $status = isset( $_POST['status'] ) ? sanitize_text_field( $_POST['status'] ) : 'draft';
+    $thumbnail_id = isset( $_POST['thumbnail_id'] ) ? (int) $_POST['thumbnail_id'] : 0;
+    $structure_raw = isset( $_POST['structure'] ) ? $_POST['structure'] : '';
+    
+    // Xử lý structure JSON
+    $structure = [];
+    if ( ! empty( $structure_raw ) ) {
+        // Xử lý cả trường hợp có slashes và không có
+        $decoded = json_decode( stripslashes( $structure_raw ), true );
+        if ( json_last_error() !== JSON_ERROR_NONE ) {
+            // Thử lại không có stripslashes
+            $decoded = json_decode( $structure_raw, true );
+        }
+        if ( json_last_error() === JSON_ERROR_NONE && is_array( $decoded ) ) {
+            $structure = $decoded;
+        } else {
+            // Log lỗi để debug
+            if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
+                error_log( 'Ebook Save: JSON decode error - ' . json_last_error_msg() );
+                error_log( 'Ebook Save: Structure raw - ' . substr( $structure_raw, 0, 500 ) );
+            }
+        }
+    }
+
+    if ( empty( $title ) ) {
+        wp_send_json_error( [ 'message' => 'Tiêu đề không được để trống.' ] );
+    }
+
+    // Chuẩn bị dữ liệu post
+    $post_data = [
+        'post_title'   => $title,
+        'post_content' => $content,
+        'post_type'    => 'ebook',
+        'post_status'  => $status, // Sử dụng status từ form
+        'post_parent'  => 0, // Đảm bảo ebook chính có parent = 0
+    ];
+
+    if ( $ebook_id > 0 ) {
+        // Cập nhật ebook hiện có
+        $post_data['ID'] = $ebook_id;
+        // Không thay đổi post_parent khi update (giữ nguyên cấu trúc)
+        unset( $post_data['post_parent'] );
+        $result = wp_update_post( $post_data, true );
+    } else {
+        // Tạo ebook mới - đảm bảo post_parent = 0
+        $result = wp_insert_post( $post_data, true );
+    }
+
+    if ( is_wp_error( $result ) ) {
+        wp_send_json_error( [ 
+            'message' => $result->get_error_message(),
+            'error_code' => $result->get_error_code(),
+            'error_data' => $result->get_error_data(),
+        ] );
+    }
+
+    $ebook_id = (int) $result;
+    
+    // Kiểm tra xem post đã được tạo/cập nhật thành công chưa
+    if ( $ebook_id <= 0 ) {
+        wp_send_json_error( [ 'message' => 'Không thể tạo/cập nhật Ebook. ID không hợp lệ.' ] );
+    }
+
+    // Lưu cấu trúc chapters vào meta
+    if ( ! empty( $structure ) ) {
+        update_post_meta( $ebook_id, '_ebook_structure', $structure );
+        
+        // Tạo/cập nhật các child pages từ structure
+        $updated_structure = [];
+        foreach ( $structure as $item ) {
+            $page_data = [
+                'post_title'   => $item['title'] ?? 'Trang mới',
+                'post_content' => $item['content'] ?? '',
+                'post_type'    => 'ebook',
+                'post_parent'  => $ebook_id,
+                'post_status'  => $status, // Dùng cùng status với ebook chính
+                'menu_order'   => 0,
+            ];
+            
+            if ( isset( $item['post_id'] ) && $item['post_id'] > 0 ) {
+                // Cập nhật page hiện có
+                $page_data['ID'] = (int) $item['post_id'];
+                $update_result = wp_update_post( $page_data, true );
+                if ( ! is_wp_error( $update_result ) ) {
+                    $item['post_id'] = (int) $item['post_id'];
+                }
+            } else {
+                // Tạo page mới
+                $new_page_id = wp_insert_post( $page_data, true );
+                if ( ! is_wp_error( $new_page_id ) && $new_page_id > 0 ) {
+                    // Cập nhật lại structure với post_id mới
+                    $item['post_id'] = $new_page_id;
+                }
+            }
+            
+            // Xử lý children nếu có (recursive)
+            if ( isset( $item['children'] ) && is_array( $item['children'] ) && ! empty( $item['children'] ) ) {
+                // Xử lý children pages - parent phải là parent page ID, không phải ebook_id
+                $parent_page_id = isset( $item['post_id'] ) && $item['post_id'] > 0 ? (int) $item['post_id'] : $ebook_id;
+                $processed_children = [];
+                foreach ( $item['children'] as $child ) {
+                    $child_page_data = [
+                        'post_title'   => $child['title'] ?? 'Trang mới',
+                        'post_content' => $child['content'] ?? '',
+                        'post_type'    => 'ebook',
+                        'post_parent'  => $parent_page_id, // Children có parent là parent page ID
+                        'post_status'  => $status,
+                        'menu_order'   => 0,
+                    ];
+                    
+                    if ( isset( $child['post_id'] ) && $child['post_id'] > 0 ) {
+                        $child_page_data['ID'] = (int) $child['post_id'];
+                        $child_update_result = wp_update_post( $child_page_data, true );
+                        if ( ! is_wp_error( $child_update_result ) ) {
+                            $child['post_id'] = (int) $child['post_id'];
+                        }
+                    } else {
+                        $new_child_page_id = wp_insert_post( $child_page_data, true );
+                        if ( ! is_wp_error( $new_child_page_id ) && $new_child_page_id > 0 ) {
+                            $child['post_id'] = $new_child_page_id;
+                        }
+                    }
+                    
+                    // Xử lý nested children (recursive)
+                    if ( isset( $child['children'] ) && is_array( $child['children'] ) && ! empty( $child['children'] ) ) {
+                        $child_parent_id = isset( $child['post_id'] ) && $child['post_id'] > 0 ? (int) $child['post_id'] : $parent_page_id;
+                        $nested_children = [];
+                        foreach ( $child['children'] as $nested_child ) {
+                            $nested_page_data = [
+                                'post_title'   => $nested_child['title'] ?? 'Trang mới',
+                                'post_content' => $nested_child['content'] ?? '',
+                                'post_type'    => 'ebook',
+                                'post_parent'  => $child_parent_id,
+                                'post_status'  => $status,
+                                'menu_order'   => 0,
+                            ];
+                            
+                            if ( isset( $nested_child['post_id'] ) && $nested_child['post_id'] > 0 ) {
+                                $nested_page_data['ID'] = (int) $nested_child['post_id'];
+                                $nested_update_result = wp_update_post( $nested_page_data, true );
+                                if ( ! is_wp_error( $nested_update_result ) ) {
+                                    $nested_child['post_id'] = (int) $nested_child['post_id'];
+                                }
+                            } else {
+                                $new_nested_page_id = wp_insert_post( $nested_page_data, true );
+                                if ( ! is_wp_error( $new_nested_page_id ) && $new_nested_page_id > 0 ) {
+                                    $nested_child['post_id'] = $new_nested_page_id;
+                                }
+                            }
+                            
+                            $nested_children[] = $nested_child;
+                        }
+                        $child['children'] = $nested_children;
+                    } else {
+                        $child['children'] = [];
+                    }
+                    
+                    $processed_children[] = $child;
+                }
+                $item['children'] = $processed_children;
+            } else {
+                $item['children'] = [];
+            }
+            
+            $updated_structure[] = $item;
+        }
+        
+        // Cập nhật lại structure với post_id đã được cập nhật
+        update_post_meta( $ebook_id, '_ebook_structure', $updated_structure );
+    }
+
+    // Lưu thumbnail (ảnh đại diện)
+    if ( $thumbnail_id > 0 ) {
+        set_post_thumbnail( $ebook_id, $thumbnail_id );
+    } elseif ( $thumbnail_id === 0 && $ebook_id > 0 ) {
+        // Xóa thumbnail nếu thumbnail_id = 0
+        delete_post_thumbnail( $ebook_id );
+    }
+
+    // Verify post was created/updated
+    $saved_post = get_post( $ebook_id );
+    if ( ! $saved_post || $saved_post->post_type !== 'ebook' ) {
+        wp_send_json_error( [ 'message' => 'Ebook đã được lưu nhưng không thể xác minh.' ] );
+    }
+
+    wp_send_json_success( [
+        'message'  => 'Đã lưu Ebook thành công!',
+        'ebook_id' => $ebook_id,
+        'data'     => [
+            'ebook_id'    => $ebook_id,
+            'post_title'   => $saved_post->post_title,
+            'post_status'  => $saved_post->post_status,
+            'post_parent'  => $saved_post->post_parent,
+        ],
+    ] );
+} );
