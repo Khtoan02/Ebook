@@ -1,0 +1,26 @@
+/*
+Theme Name: Ebook GitBook Style
+Theme URI: https://sachchocon.online/themes/ebook
+Author: sachchocon.online
+Author URI: https://sachchocon.online
+Description: Theme ebook mô phỏng trải nghiệm GitBook với Tailwind, Alpine và HTMX.
+Version: 0.1.0
+Requires at least: 6.0
+Tested up to: 6.7
+Requires PHP: 7.4
+Text Domain: ebook-gitbook
+*/
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+  --ebook-border: #e2e8f0;
+  --ebook-bg: #f8fafc;
+  --ebook-text: #0f172a;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--ebook-bg);
+  color: var(--ebook-text);
+}
